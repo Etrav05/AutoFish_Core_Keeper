@@ -6,6 +6,7 @@ import threading
 
 running = True  ## shared flag for stopping threads
 inventory = False
+pause = False
 
 def watch_for_quit():
     global running
@@ -19,7 +20,24 @@ def watch_for_inventory():
         keyboard.wait('tab')
         inventory = not inventory
         print(f"\n[?] Inventory mode {'ON' if inventory else 'OFF'}")
-        time.sleep(0.3)  ## Preventing double trigger
+        time.sleep(0.5)  ## Preventing double trigger
+
+def watch_for_pause():
+    global pause
+    while True:
+        keyboard.wait('p')
+        pause = not pause
+        print(f"\n[?] Pause - {'ON' if pause else 'OFF'}")
+        time.sleep(1)  ## Preventing double trigger
+
+
+def watch_all():
+    global running, inventory, pause
+
+    while True:
+        watch_for_quit()
+        watch_for_inventory()
+        watch_for_pause()
 
 caughtX = 955
 caughtY_lower, caughtY_upper = 338, 441
@@ -61,17 +79,12 @@ def cast_when_caught():
                 image = pyautogui.screenshot()
                 if image.getpixel((caughtX, y)) != (227, 228, 235):
                     break
-                time.sleep(0.05)
+                time.sleep(0.2)
 
             return  ## exit function
 
 def main():
-    global running
-    global inventory
-    threading.Thread(target=watch_for_quit, daemon=True).start()  ## start another thread so we can force quit
-    threading.Thread(target=watch_for_inventory, daemon=True).start()  ## start another thread so we can force quit
-
-    cast()
+    threading.Thread(target=watch_all, daemon=True).start()  ## start another thread; so we can watch all user actions
 
     while running:
         if not inventory:
