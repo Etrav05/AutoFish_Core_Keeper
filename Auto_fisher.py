@@ -63,34 +63,44 @@ def cast():
     time.sleep(0.200)
     win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP, 0, 0)
 
-def cast_when_caught():
-    image = pyautogui.screenshot()
+def cast_when_caught(timeout=7):
+    start_time = time.time()
 
-    for y in range(caughtY_lower, caughtY_upper + 1):
-        colour = image.getpixel((caughtX, y))
-        if colour == (227, 228, 235):
-            print("reeling")
-            reel()
-            time.sleep(0.1)
-            print("casting")
+    while True:
+        image = pyautogui.screenshot()
+
+        for y in range(caughtY_lower, caughtY_upper + 1):
+            colour = image.getpixel((caughtX, y))
+            if colour == (227, 228, 235):
+                print("reeling")
+                reel()
+                time.sleep(0.1)
+                print("casting")
+                cast()
+
+                while True:  ## Wait for the "caught" symbol to go away
+                    image = pyautogui.screenshot()
+                    if image.getpixel((caughtX, y)) != (227, 228, 235):
+                        break
+                    time.sleep(0.2)
+
+                return  ## exit function
+
+        elapsed = time.time() - start_time  # Check timeout (this will catch errors)
+        if elapsed >= timeout:
+            print("Timeout reached - forcing cast")
             cast()
+            return
 
-            while True:  ## Wait for the "caught" symbol to go away
-                image = pyautogui.screenshot()
-                if image.getpixel((caughtX, y)) != (227, 228, 235):
-                    break
-                time.sleep(0.2)
-
-            return  ## exit function
+        time.sleep(0.1)
 
 def main():
     threading.Thread(target=watch_all, daemon=True).start()  ## start another thread; so we can watch all user actions
 
     while running:
-        if not inventory:
+        if not inventory or not pause:
             cast_when_caught()
-        else:
-            continue
+        time.sleep(0.1)  # small delay to avoid CPU spinning
 
 if __name__ == "__main__":
     main()
